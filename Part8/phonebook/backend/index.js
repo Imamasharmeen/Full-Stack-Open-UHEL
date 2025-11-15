@@ -81,7 +81,7 @@ let books = [
 ]
 
 /*
-  Exercise 8.6: Adding a book + auto-create author
+  Exercise 8.7: editAuthor mutation
 */
 const typeDefs = `
   type Author {
@@ -113,6 +113,11 @@ const typeDefs = `
       published: Int!
       genres: [String!]!
     ): Book!
+
+    editAuthor(
+      name: String!
+      setBornTo: Int!
+    ): Author
   }
 `
 
@@ -145,25 +150,35 @@ const resolvers = {
 
   Mutation: {
     addBook: (root, args) => {
-      // ✔ 1. Create author if not exists
+      // create author if needed
       let author = authors.find(a => a.name === args.author)
       if (!author) {
         author = {
           name: args.author,
           id: uuid(),
-          born: null  // per exercise instructions
+          born: null
         }
         authors = authors.concat(author)
       }
 
-      // ✔ 2. Create the book
       const newBook = {
         ...args,
         id: uuid()
       }
       books = books.concat(newBook)
-
       return newBook
+    },
+
+    editAuthor: (root, args) => {
+      const author = authors.find(a => a.name === args.name)
+      if (!author) {
+        return null
+      }
+
+      // update birth year
+      author.born = args.setBornTo
+
+      return author
     }
   }
 }
