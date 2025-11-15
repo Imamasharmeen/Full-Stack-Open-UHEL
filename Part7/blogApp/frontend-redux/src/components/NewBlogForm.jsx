@@ -1,99 +1,70 @@
 import { useState } from 'react'
-import { useDispatch } from 'react-redux'
-import { createBlog } from '../reducers/blogsReducer'
+import Notification from './Notification'
+import { useDispatch, useSelector } from 'react-redux'
+import { loginUser } from '../reducers/userReducer'
 import { setNotification } from '../reducers/notificationReducer'
 
-const NewBlogForm = ({ blogFormRef, handleLogout }) => {
-  const [title, setTitle] = useState('')
-  const [author, setAuthor] = useState('')
-  const [url, setUrl] = useState('')
+const LoginForm = ({ login }) => {
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
 
   const dispatch = useDispatch()
 
-  const addNewBlog = async (event) => {
+  const notification = useSelector((state) => state.notification)
+
+  const handleLogin = async (event) => {
     event.preventDefault()
 
-    dispatch(createBlog({ title, author, url }))
-      .then(() => {
-        blogFormRef.current.toggleVisibility()
+    dispatch(loginUser({ username, password }))
+      .then((res) => {
         dispatch(
           setNotification(
-            {
-              message: `a new Blog ${title} by ${author} added`,
-              type: 'success',
-            },
-            4000
-          )
-        )
-        setTitle('')
-        setAuthor('')
-        setUrl('')
-      })
-      .catch((error) => {
-        if (error.response.data.error === 'token expired') {
-          handleLogout()
-        }
-        dispatch(
-          setNotification(
-            {
-              message: error.response.data.error,
-              type: 'error',
-            },
+            { message: `${username} logged in`, type: 'success' },
             4000
           )
         )
       })
+      .catch((error) =>
+        dispatch(
+          setNotification(
+            { message: 'invalid username or password', type: 'error' },
+            4000
+          )
+        )
+      )
   }
 
   return (
-    <div className='createForm'>
-      <h2>create new</h2>
-      <form onSubmit={addNewBlog}>
+    <div>
+      <h2>log in to application</h2>
+      <Notification notification={notification} />
+      <form onSubmit={handleLogin}>
         <div>
-          <label className='visually-hidden' htmlFor='title'>
-            title
-          </label>
+          <label htmlFor='username'>username</label>
           <input
-            id='title'
-            name='title'
+            id='username'
+            name='username'
             type='text'
-            value={title}
-            onChange={({ target }) => setTitle(target.value)}
-            placeholder='Title'
+            value={username}
+            onChange={({ target }) => setUsername(target.value)}
           />
         </div>
         <div>
-          <label className='visually-hidden' htmlFor='author'>
-            author
-          </label>
+          <label htmlFor='password'>password</label>
           <input
-            id='author'
-            name='author'
-            type='text'
-            value={author}
-            onChange={({ target }) => setAuthor(target.value)}
-            placeholder='Author'
+            id='password'
+            name='password'
+            type='password'
+            value={password}
+            onChange={({ target }) => setPassword(target.value)}
           />
         </div>
-        <div>
-          <label className='visually-hidden' htmlFor='url'>
-            url
-          </label>
-          <input
-            id='url'
-            name='url'
-            type='text'
-            value={url}
-            onChange={({ target }) => setUrl(target.value)}
-            placeholder='URL'
-          />
-        </div>
-        <button id='create-button' type='submit'>
-          create
+        <button id='login-button' type='submit'>
+          login
         </button>
       </form>
     </div>
   )
 }
 
-export default NewBlogForm
+export default LoginForm
