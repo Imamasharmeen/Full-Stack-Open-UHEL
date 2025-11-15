@@ -1,59 +1,90 @@
-import { createSlice } from '@reduxjs/toolkit'
-import blogService from '../services/blogs'
+import { useState } from 'react'
+import { useDispatch } from 'react-redux'
+import { createBlog } from '../reducers/blogsReducer'
+import { setNotification } from '../reducers/notificationReducer'
 
-const slice = createSlice({
-  name: 'blogs',
-  initialState: [],
-  reducers: {
-    appendBlog(state, action) {
-      state.push(action.payload)
-    },
-    setBlogs(state, action) {
-      return action.payload
-    },
-    updateBlog(state, action) {
-      const updatedBlog = action.payload
+const NewBlogForm = ({ blogFormRef, handleLogout }) => {
+  const [title, setTitle] = useState('')
+  const [author, setAuthor] = useState('')
+  const [url, setUrl] = useState('')
 
-      return state.map((blog) =>
-        blog.id === updatedBlog.id ? updatedBlog : blog
-      )
-    },
-    removeBlog(state, action) {
-      const id = action.payload
+  const dispatch = useDispatch()
 
-      return state.filter((blog) => blog.id !== id)
-    },
-  },
-})
+  const addNewBlog = async (event) => {
+    event.preventDefault()
 
-export const { appendBlog, setBlogs, updateBlog, removeBlog } = slice.actions
-
-export const initializeBlogs = () => {
-  return async (dispatch) => {
-    const blogs = await blogService.getAll()
-    dispatch(setBlogs(blogs))
+    dispatch(createBlog({ title, author, url }))
+      .then(() => {
+        blogFormRef.current.toggleVisibility()
+        dispatch(
+          setNotification(
+            {
+              message: `a new Blog ${title} by ${author} added`,
+              type: 'success',
+            },
+            4000
+          )
+        )
+        setTitle('')
+        setAuthor('')
+        setUrl('')
+      })
+      .catch((error) => {
+        if (error.response.data.error === 'token expired') {
+          handleLogout()
+        }
+        dispatch(
+          setNotification(
+            {
+              message: error.response.data.error,
+              type: 'error',
+            },
+            4000
+          )
+        )
+      })
   }
+
+  return (
+    <div className='formDiv'>
+      <h2>create new</h2>
+      <form onSubmit={addNewBlog}>
+        <div>
+          <label htmlFor='title'>title</label>
+          <input
+            id='title'
+            name='title'
+            type='text'
+            value={title}
+            onChange={({ target }) => setTitle(target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor='author'>author</label>
+          <input
+            id='author'
+            name='author'
+            type='text'
+            value={author}
+            onChange={({ target }) => setAuthor(target.value)}
+          />
+        </div>
+        <div>
+          <label htmlFor='url'>url</label>
+          <input
+            id='url'
+            name='url'
+            type='text'
+            value={url}
+            onChange={({ target }) => setUrl(target.value)}
+          />
+        </div>
+        <button id='create-button' type='submit'>
+          create
+        </button>
+      </form>
+    </div>
+  )
 }
 
-export const createBlog = (blogObject) => {
-  return async (dispatch) => {
-    const newBlog = await blogService.create(blogObject)
-    dispatch(appendBlog(newBlog))
-  }
-}
-
-export const updateBlogLikes = (updatedBlogObject) => {
-  return async (dispatch) => {
-    const updatedBlog = await blogService.update(updatedBlogObject)
-    dispatch(updateBlog(updatedBlog))
-  }
-}
-
-export const deleteBlog = (id) => {
-  return async (dispatch) => {
-    await blogService.remove(id)
-    dispatch(removeBlog(id))
-  }
-}
-
-export default slice.reducer
+export default NewBlogForm
