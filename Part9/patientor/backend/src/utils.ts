@@ -1,119 +1,82 @@
-import { z } from 'zod';
-import {
-  Gender,
-  NewPatient,
-  Diagnosis,
-  NewEntry,
-  HealthCheckRating,
-} from './types';
+import { NewDiaryEntry, Weather, Visibility } from './types';
 
-export const NewPatientSchema = z.object({
-  name: z.string(),
-  dateOfBirth: z.string().date(),
-  ssn: z.string(),
-  gender: z.nativeEnum(Gender),
-  occupation: z.string(),
-});
-
-const toNewPatient = (object: unknown): NewPatient => {
-  return NewPatientSchema.parse(object);
+const isString = (text: unknown): text is string => {
+  return typeof text === 'string' || text instanceof String;
 };
 
-export const parseDiagnosisCodes = (
-  object: unknown
-): Array<Diagnosis['code']> => {
-  if (!object || typeof object !== 'object' || !('diagnosisCodes' in object)) {
-    return [] as Array<Diagnosis['code']>;
+// Parse Comment
+const parseComment = (comment: unknown): string => {
+  if (!isString(comment)) {
+    throw new Error('Incorrect or missing comment');
   }
 
-  return object.diagnosisCodes as Array<Diagnosis['code']>;
+  return comment;
 };
 
-export const parseNewEntry = (object: unknown): NewEntry => {
+// Parse Date
+const isDate = (date: string): boolean => {
+  return Boolean(Date.parse(date));
+};
+
+const parseDate = (date: unknown): string => {
+  if (!isString(date) || !isDate(date)) {
+    throw new Error('Incorrect or missing date: ' + date);
+  }
+
+  return date;
+};
+
+// Parse Weather
+const isWeather = (param: string): param is Weather => {
+  return Object.values(Weather)
+    .map((v) => v.toString())
+    .includes(param);
+};
+
+const parseWeather = (weather: unknown): Weather => {
+  if (!isString(weather) || !isWeather(weather)) {
+    throw new Error('Incorrect or missing weather: ' + weather);
+  }
+
+  return weather;
+};
+
+// Parse Visibility
+const isVisibility = (param: string): param is Visibility => {
+  return Object.values(Visibility)
+    .map((v) => v.toString())
+    .includes(param);
+};
+
+const parseVisibility = (visibility: unknown): Visibility => {
+  if (!isString(visibility) || !isVisibility(visibility)) {
+    throw new Error('Incorrect or missing visibility: ' + visibility);
+  }
+
+  return visibility;
+};
+
+const toNewDiaryEntry = (object: unknown): NewDiaryEntry => {
   if (!object || typeof object !== 'object') {
     throw new Error('Incorrect or missing data');
   }
 
   if (
-    'description' in object &&
+    'comment' in object &&
     'date' in object &&
-    'specialist' in object &&
-    'type' in object &&
-    object.description &&
-    object.date &&
-    object.specialist &&
-    object.type
+    'weather' in object &&
+    'visibility' in object
   ) {
-    const parsedDescription = z.string().parse(object.description);
-    const parsedDate = z.string().date().parse(object.date);
-    const parsedSpecialist = z.string().parse(object.specialist);
-    const parsedType = z.string().parse(object.type);
-
-    const newBaseEntry = {
-      description: parsedDescription,
-      date: parsedDate,
-      specialist: parsedSpecialist,
-      diagnosisCodes: parseDiagnosisCodes(object),
+    const newEntry: NewDiaryEntry = {
+      comment: parseComment(object.comment),
+      date: parseDate(object.date),
+      weather: parseWeather(object.weather),
+      visibility: parseVisibility(object.visibility),
     };
 
-    if (parsedType === 'HealthCheck') {
-      if ('healthCheckRating' in object) {
-        const newEntry: NewEntry = {
-          ...newBaseEntry,
-          type: parsedType,
-          healthCheckRating: z
-            .nativeEnum(HealthCheckRating)
-            .parse(object.healthCheckRating),
-        };
-        return newEntry;
-      }
-      throw new Error('Inccorect data: some fields are missing');
-    } else if (parsedType === 'OccupationalHealthcare') {
-      if (
-        'employerName' in object &&
-        'sickLeave' in object &&
-        object.employerName
-      ) {
-        const sickLeaveSchema = z.object({
-          startDate: z.string().date(),
-          endDate: z.string().date(),
-        });
-
-        const newEntry: NewEntry = {
-          ...newBaseEntry,
-          type: parsedType,
-          employerName: z.string().parse(object.employerName),
-          sickLeave: sickLeaveSchema.parse(object.sickLeave),
-        };
-
-        if (newEntry.sickLeave.startDate && newEntry.sickLeave.endDate) {
-          return newEntry;
-        }
-        throw new Error('Inccorect data: some fields are missing');
-      }
-      throw new Error('Inccorect data: some fields are missing');
-    } else if (parsedType === 'Hospital') {
-      if ('discharge' in object) {
-        const dischargeSchema = z.object({
-          date: z.string().date(),
-          criteria: z.string(),
-        });
-
-        const newEntry: NewEntry = {
-          ...newBaseEntry,
-          type: parsedType,
-          discharge: dischargeSchema.parse(object.discharge),
-        };
-
-        return newEntry;
-      }
-      throw new Error('Inccorect data: some fields are missing');
-    } else {
-      throw new Error('Inccorect type.');
-    }
+    return newEntry;
   }
-
-  throw new Error('Inccorect data: some fields are missing');
+  throw new Error('Incorrect data: some fields are missing');
 };
 
-export default toNewPatient;
+export default toNewDiaryEntry;

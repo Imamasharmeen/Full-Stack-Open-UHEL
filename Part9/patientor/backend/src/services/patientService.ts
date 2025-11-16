@@ -1,18 +1,24 @@
-import patients from '../../data/patients';
-import { NonSensitivePatient } from '../types';
+export enum Gender {
+  Male = 'male',
+  Female = 'female',
+  Other = 'other',
+}
 
-const getNonSensitivePatients = (): NonSensitivePatient[] => {
-  return patients.map(({ id, name, dateOfBirth, gender, occupation }) => {
-    return {
-      id,
-      name,
-      dateOfBirth,
-      gender,
-      occupation,
-    };
-  });
-};
+export interface Diagnosis {
+  code: string;
+  name: string;
+  latin?: string;
+}
 
-export default {
-  getNonSensitivePatients,
-};
+export interface Patient {
+  id: string;
+  name: string;
+  dateOfBirth: string;
+  ssn: string;
+  gender: Gender;
+  occupation: string;
+}
+
+export type NonSensitivePatient = Omit<Patient, 'ssn'>;
+
+export type NewPatient = Omit<Patient, 'id'>;
