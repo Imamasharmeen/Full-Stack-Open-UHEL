@@ -1,0 +1,22 @@
+/* Entry */
+.entry {
+  border: 1px solid black;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.entryForm {
+  border: 1px dashed black;
+  padding: 2rem;
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.leaveLabel {
+  margin: 1rem 0 0.25rem;
+}
+
+.leaveGroup {
+  padding-left: 1rem;
+}
