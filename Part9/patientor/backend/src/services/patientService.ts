@@ -1,24 +1,37 @@
-export enum Gender {
-  Male = 'male',
-  Female = 'female',
-  Other = 'other',
-}
+import patients from '../../data/patients';
+import { NewPatient, NonSensitivePatient, Patient } from '../types';
+import { v1 as uuid } from 'uuid';
 
-export interface Diagnosis {
-  code: string;
-  name: string;
-  latin?: string;
-}
+const getNonSensitivePatients = (): NonSensitivePatient[] => {
+  return patients.map(({ id, name, dateOfBirth, gender, occupation }) => {
+    return {
+      id,
+      name,
+      dateOfBirth,
+      gender,
+      occupation,
+    };
+  });
+};
 
-export interface Patient {
-  id: string;
-  name: string;
-  dateOfBirth: string;
-  ssn: string;
-  gender: Gender;
-  occupation: string;
-}
+const findById = (id: string): Patient | undefined => {
+  const patient = patients.find((p) => p.id === id);
+  return patient;
+};
 
-export type NonSensitivePatient = Omit<Patient, 'ssn'>;
+const addPatient = (patient: NewPatient): Patient => {
+  const newPatient = {
+    id: uuid(),
+    entries: [],
+    ...patient,
+  };
 
-export type NewPatient = Omit<Patient, 'id'>;
+  patients.push(newPatient);
+  return newPatient;
+};
+
+export default {
+  getNonSensitivePatients,
+  addPatient,
+  findById,
+};
