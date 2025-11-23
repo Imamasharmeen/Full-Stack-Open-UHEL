@@ -1,38 +1,19 @@
 const express = require('express')
 const { Todo } = require('../mongo')
 const router = express.Router()
-const { getAsync, setAsync } = require('../redis/index.js')
-
-router.get('/statistics', async (_, res) => {
-  const addedTodos = await getAsync('added_todos')
-  res.send(200)
-  if (!addedTodos) {
-    setAsync('added_todos', '0')
-    return res.send({ addedTodos: '0' })
-  } else {
-    res.json({ addedTodos })
-  }
-})
 
 /* GET todos listing. */
 router.get('/', async (_, res) => {
   const todos = await Todo.find({})
-  res.json(todos)
+  res.send(todos)
 })
 
 /* POST todo to listing. */
 router.post('/', async (req, res) => {
-  if (!(await getAsync('added_todos'))) {
-    await setAsync('added_todos', '0')
-  }
-
   const todo = await Todo.create({
     text: req.body.text,
     done: false,
   })
-
-  setAsync('added_todos', parseInt(await getAsync('added_todos')) + 1)
-
   res.send(todo)
 })
 
@@ -59,13 +40,17 @@ singleRouter.get('/', async (req, res) => {
 
 /* PUT todo. */
 singleRouter.put('/', async (req, res) => {
-  const updatedTodo = await Todo.findByIdAndUpdate(
+  if (!req.body.text) {
+    return res.status(400).json({ error: 'Text is required' })
+  }
+
+  todo = await Todo.findByIdAndUpdate(
     req.todo._id,
-    { done: !req.todo.done },
+    { text: req.body.text },
     { new: true }
   )
 
-  res.json(updatedTodo)
+  res.json(todo)
 })
 
 router.use('/:id', findByIdMiddleware, singleRouter)
